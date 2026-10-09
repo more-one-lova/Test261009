@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMAX 글로벌 실시간 대시보드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Flag Icon CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.5.0/css/flag-icon.min.css">
+    <style>
+        /* 기본 폰트 설정 */
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* 기본 대시보드 카드 스타일 */
+        .dashboard-card {
+            background-color: rgba(23, 37, 84, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+        }
+        /* 입체감을 위한 사업장 카드 스타일 (크기 조정) */
+        .location-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.8));
+            border-radius: 0.75rem; /* Radius 축소 */
+            padding: 0.6rem; /* Padding 축소 */
+            transition: all 0.3s ease-in-out;
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .location-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+            border-color: rgba(199, 210, 254, 0.7);
+        }
+        .location-card-title-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center; /* align-items center로 변경 */
+            padding-bottom: 0.4rem;
+        }
+        .location-card-title {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1rem; /* Font size를 0.95rem -> 1rem으로 키움 */
+            color: #e0e7ff;
+        }
+        /* 스크롤바 스타일 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(129, 140, 248, 0.5);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(129, 140, 248, 0.8);
+        }
+        html, body {
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: rgba(129, 140, 248, 0.5) rgba(30, 41, 59, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen overflow-y-auto overflow-x-hidden flex flex-col p-4 gap-4">
+
+    <!-- 상단 헤더: 로고 및 시간 -->
+    <header class="flex flex-col md:flex-row justify-between items-center px-2 gap-2 md:gap-0">
+        <h1 class="text-xl md:text-2xl font-bold text-indigo-300 text-center md:text-left">GMAX Global Operations Dashboard</h1>
+        <div id="datetime" class="text-base md:text-lg font-medium text-gray-300 text-center md:text-right">
+            <div id="date"></div>
+            <div id="time" class="text-xl md:text-2xl font-bold"></div>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-grow grid grid-cols-1 xl:grid-cols-3 xl:grid-rows-[min-content_1fr] gap-4">
+
+        <!-- 사업장별 실시간 현황 -->
+        <div class="col-span-1 xl:col-span-2 xl:row-span-2 dashboard-card rounded-2xl p-4 flex flex-col min-h-0">
+            <h2 class="text-xl font-semibold text-indigo-200 mb-3 flex-shrink-0">사업장별 실시간 현황</h2>
+            <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-2.5 overflow-y-auto">
+                <!-- 한국 (본사) -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-kr mr-2"></span>한국 (본사)</h3>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                    <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">1,200</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">300</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">150</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 한국 (아산) -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-kr mr-2"></span>한국 (아산)</h3>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                     <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">800</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">200</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">50</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 미국 (앨라배마) -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-us mr-2"></span>미국 (앨라배마)</h3>
+                        <span id="time-al" class="text-xs font-normal text-indigo-300"></span>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                     <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">1,100</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">250</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">100</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 미국 (조지아) -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-us mr-2"></span>미국 (조지아)</h3>
+                        <span id="time-ga" class="text-xs font-normal text-indigo-300"></span>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                     <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">900</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">250</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">100</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 멕시코 -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-mx mr-2"></span>멕시코</h3>
+                        <span id="time-mx" class="text-xs font-normal text-indigo-300"></span>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                     <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">750</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">180</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">80</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 중국 -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-cn mr-2"></span>중국</h3>
+                        <span id="time-cn" class="text-xs font-normal text-indigo-300"></span>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                     <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">2,000</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">500</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">200</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 인도 -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-in mr-2"></span>인도</h3>
+                        <span id="time-in" class="text-xs font-normal text-indigo-300"></span>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                     <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">1,500</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">400</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">180</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 인도네시아 -->
+                <div class="location-card">
+                    <div class="location-card-title-wrapper">
+                        <h3 class="location-card-title"><span class="flag-icon flag-icon-id mr-2"></span>인도네시아</h3>
+                        <span id="time-id" class="text-xs font-normal text-indigo-300"></span>
+                    </div>
+                    <hr class="border-gray-600/50 mb-2">
+                     <div class="flex justify-around text-center">
+                        <div>
+                            <p class="text-xs text-gray-400">수주</p>
+                            <p class="text-sm font-bold text-white mt-1">1,800</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">출고</p>
+                            <p class="text-sm font-bold text-white mt-1">450</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">재고</p>
+                            <p class="text-sm font-bold text-white mt-1">220</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨테이너 터미널 스케줄 -->
+        <div class="col-span-1 dashboard-card rounded-2xl p-4 flex flex-col min-h-0">
+            <div class="flex justify-between items-baseline mb-2 flex-shrink-0">
+                <h2 class="text-xl font-semibold text-indigo-200">컨테이너 터미널 스케줄</h2>
+                <span id="schedule-update-time" class="text-xs font-normal text-gray-400"></span>
+            </div>
+            <!-- flex-grow -> h-64 수정 -->
+            <div id="schedule-container" class="overflow-auto h-64">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-indigo-300 uppercase sticky top-0 bg-gray-800/50 backdrop-blur-sm">
+                        <tr>
+                            <th scope="col" class="px-4 py-2 whitespace-nowrap">Port</th>
+                            <th scope="col" class="px-4 py-2 whitespace-nowrap">Terminal</th>
+                            <th scope="col" class="px-4 py-2 whitespace-nowrap">Vessel</th>
+                            <th scope="col" class="px-4 py-2 whitespace-nowrap">Voyage No.</th>
+                            <th scope="col" class="px-4 py-2 whitespace-nowrap">ETD</th>
+                            <th scope="col" class="px-4 py-2 whitespace-nowrap">ETA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedule-body" class="text-gray-200">
+                        <!-- 스케줄 데이터가 여기에 동적으로 추가됩니다. -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 분기별 수주 현황 차트 -->
+        <div class="col-span-1 dashboard-card rounded-2xl p-4 flex flex-col min-h-[300px] xl:min-h-0">
+            <h2 class="text-xl font-semibold text-indigo-200 mb-2">사업장별 수주 현황 (1~3월)</h2>
+            <div class="flex-grow relative">
+                <canvas id="orderChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- 실시간 시계 기능 ---
+        function updateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const week = ['일', '월', '화', '수', '목', '금', '토'][now.getDay()];
+            
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            document.getElementById('date').textContent = `${year}.${month}.${day} (${week})`;
+            document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // --- 현지 시각 업데이트 기능 ---
+        function updateLocalTime(elementId, timeZone) {
+            const now = new Date();
+            const weekdayFormatter = new Intl.DateTimeFormat('ko-KR', { timeZone: timeZone, weekday: 'short' });
+            const weekday = weekdayFormatter.format(now);
+            const dateTimeFormatter = new Intl.DateTimeFormat('sv-SE', {
+                timeZone: timeZone,
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            const parts = dateTimeFormatter.formatToParts(now);
+            const localTimeData = {};
+            parts.forEach(({type, value}) => { localTimeData[type] = value; });
+            
+            const element = document.getElementById(elementId);
+            if(element) {
+                element.textContent = `${localTimeData.month}/${localTimeData.day} (${weekday}) ${localTimeData.hour}:${localTimeData.minute}`;
+            }
+        }
+
+        // --- 컨테이너 스케줄 업데이트 시간 표시 ---
+        function updateScheduleTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            document.getElementById('schedule-update-time').textContent = `Updated: ${timeString}`;
+        }
+
+        function updateAllClocks() {
+            updateTime();
+            updateLocalTime('time-al', 'America/Chicago');
+            updateLocalTime('time-ga', 'America/New_York');
+            updateLocalTime('time-mx', 'America/Mexico_City');
+            updateLocalTime('time-cn', 'Asia/Shanghai');
+            updateLocalTime('time-in', 'Asia/Kolkata');
+            updateLocalTime('time-id', 'Asia/Jakarta');
+        }
+
+        // --- 스케줄 시간은 한번만 업데이트 하도록 수정 ---
+        setInterval(updateAllClocks, 1000);
+        updateAllClocks();
+
+        // --- 컨테이너 스케줄 동적 생성 ---
+        function populateSchedule() {
+            const scheduleBody = document.getElementById('schedule-body');
+            const vessels = [
+                { name: "OCEAN PIONEER", voyage: "OP2408E", terminal: "PNIT" },
+                { name: "STELLAR HORIZON", voyage: "SH2408E", terminal: "HPNT" },
+                { name: "NEPTUNE'S PRIDE", voyage: "NP2408E", terminal: "BNCT" },
+                { name: "MARINER'S DREAM", voyage: "MD2408E", terminal: "PNIT" },
+                { name: "ATLANTIC STAR", voyage: "AS2408E", terminal: "HPNT" },
+                { name: "PACIFIC VOYAGER", voyage: "PV2408E", terminal: "BNCT" },
+                { name: "GLOBAL NAVIGATOR", voyage: "GN2408E", terminal: "PNIT" },
+                { name: "SEA SERPENT", voyage: "SS2408E", terminal: "HPNT" },
+                { name: "TITAN CARRIER", voyage: "TC2408E", terminal: "BNCT" },
+                { name: "GALAXY EXPRESS", voyage: "GE2408E", terminal: "PNIT" },
+                { name: "HYPERION SHIP", voyage: "HS2408E", terminal: "HPNT" },
+                { name: "ZENITH FREIGHTER", voyage: "ZF2408E", terminal: "BNCT" },
+            ];
+
+            let content = '';
+            const today = new Date();
+
+            function formatDate(date) {
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${month}/${day}`;
+            }
+
+            for (let i = 0; i < vessels.length; i++) {
+                const etdDate = new Date(today);
+                etdDate.setDate(today.getDate() + i * 2);
+
+                const etaDate = new Date(etdDate);
+                etaDate.setDate(etdDate.getDate() + 18);
+
+                content += `
+                    <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                        <td class="px-4 py-3 whitespace-nowrap">BUSAN</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${vessels[i].terminal}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${vessels[i].name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${vessels[i].voyage}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${formatDate(etdDate)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">${formatDate(etaDate)} (NY)</td>
+                    </tr>
+                `;
+            }
+            scheduleBody.innerHTML = content;
+            // 스케줄 데이터를 채운 직후에 업데이트 시간을 한 번만 설정
+            updateScheduleTime();
+        }
+
+        populateSchedule();
+
+
+        // --- 수주 현황 차트 ---
+        const ctx = document.getElementById('orderChart').getContext('2d');
+        const orderChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['본사', '아산', '앨라배마', '조지아', '멕시코', '중국', '인도', '인도네시아'],
+                datasets: [
+                    {
+                        label: '1월',
+                        data: [1200, 1100, 1150, 1050, 800, 1150, 360, 1200],
+                        backgroundColor: 'rgba(129, 140, 248, 0.7)',
+                        borderColor: 'rgba(129, 140, 248, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: '2월',
+                        data: [1100, 1000, 1000, 950, 750, 1050, 330, 1100],
+                        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: '3월',
+                        data: [1500, 1200, 1400, 1300, 900, 1400, 450, 1500],
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#d1d5db',
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(31, 41, 55, 0.8)',
+                        titleColor: '#e5e7eb',
+                        bodyColor: '#d1d5db',
+                        borderColor: 'rgba(129, 140, 248, 0.5)',
+                        borderWidth: 1,
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
